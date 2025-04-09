@@ -29,7 +29,4 @@ This web app features a clean, responsive interface and is built with a modern t
 - **Responsive Layout:** Tailored using Tailwind CSS for optimal viewing on any device.
 - **Animations:** Integrated via Animate.css to provide engaging transitions. For instance, key elements gently fade in on page load:
   
-  ```html
-  <div class="animate__animated animate__fadeIn">
-    <h1>Welcome to the Cloud Computing Topics App</h1>
-  </div>
+
