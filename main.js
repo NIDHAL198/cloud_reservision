@@ -43,7 +43,102 @@ function topicsApp() {
                });
             }, 300);
          },
+            // New properties for the presenter wheel
+      reservedTopicsForWheel: [],
+      isSpinning: false,
+      selectedPresenter: null,
+      spinDuration: 5000, // 5 seconds
+      
+      init() {
+         this.filteredTopics = [...this.topics];
+         // Get only reserved topics for the wheel
+         this.updateReservedTopicsForWheel();
          
+         // Apply animations to table rows on load
+         setTimeout(() => {
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach((row, index) => {
+                  row.classList.add('animate__animated', 'animate__fadeInUp');
+                  row.style.animationDelay = `${index * 0.05}s`;
+            });
+         }, 300);
+      },
+      
+      // Update the list of reserved topics for the wheel
+      updateReservedTopicsForWheel() {
+         this.reservedTopicsForWheel = this.topics.filter(topic => topic.reserved);
+      },
+      
+      
+      // Spin the presenter wheel
+      spinPresenterWheel() {
+         if (this.isSpinning || this.reservedTopicsForWheel.length === 0) return;
+         
+         this.isSpinning = true;
+         this.selectedPresenter = null;
+         
+         // Calculate a random rotation between 5-10 full rotations plus a random angle
+         const minRotations = 5;
+         const maxRotations = 10;
+         const randomRotations = minRotations + Math.random() * (maxRotations - minRotations);
+         const randomAngle = Math.floor(Math.random() * 360);
+         const totalRotation = (randomRotations * 360) + randomAngle;
+         
+         // Get the wheel element and apply rotation
+         const wheel = this.$refs.presenterWheel;
+         wheel.style.transform = `rotate(${totalRotation}deg)`;
+         
+         // After spinning is complete, determine the selected topic
+         setTimeout(() => {
+            // Calculate which topic was selected based on final rotation
+            const normalizedRotation = totalRotation % 360;
+            const sliceAngle = 360 / this.reservedTopicsForWheel.length;
+            const selectedIndex = Math.floor(normalizedRotation / sliceAngle);
+            const adjustedIndex = (this.reservedTopicsForWheel.length - selectedIndex) % this.reservedTopicsForWheel.length;
+            
+            this.selectedPresenter = this.reservedTopicsForWheel[adjustedIndex];
+            this.isSpinning = false;
+            
+            // Add confetti effect for the winner
+            this.celebrateWinner();
+         }, this.spinDuration);
+      },
+      
+      // Celebrate the selected presenter with a confetti effect
+      celebrateWinner() {
+         // Basic confetti effect - you can expand this if you want
+         // Create and append confetti elements to the DOM
+         const confettiCount = 100;
+         const container = document.createElement('div');
+         container.className = 'fixed inset-0 pointer-events-none z-50';
+         document.body.appendChild(container);
+         
+         for (let i = 0; i < confettiCount; i++) {
+            const confetti = document.createElement('div');
+            const color = Math.floor(Math.random() * 360);
+            const left = Math.random() * 100;
+            const size = Math.random() * 10 + 5;
+            
+            confetti.className = 'absolute animate__animated animate__fadeInUp animate__fadeOutDown';
+            confetti.style.cssText = `
+               left: ${left}%;
+               top: -5%;
+               width: ${size}px;
+               height: ${size}px;
+               background-color: hsl(${color}, 70%, 60%);
+               border-radius: 50%;
+               animation-duration: ${Math.random() * 2 + 2}s;
+               animation-delay: ${Math.random() * 0.5}s;
+            `;
+            
+            container.appendChild(confetti);
+         }
+         
+         // Remove confetti after 4 seconds
+         setTimeout(() => {
+            document.body.removeChild(container);
+         }, 4000);
+      },
          filterTopics() {
             const query = this.searchQuery.toLowerCase();
             this.filteredTopics = this.topics.filter(topic => {

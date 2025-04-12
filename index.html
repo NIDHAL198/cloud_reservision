@@ -9,6 +9,57 @@
    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" rel="stylesheet">
    <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.10.3/cdn.min.js" defer></script>
    <script src="./main.js"></script>
+   <style>
+      /* Wheel container styling */
+.wheel-container {
+   perspective: 1000px;
+}
+
+/* Wheel styling */
+.wheel {
+   transform-style: preserve-3d;
+   transition: transform 5s cubic-bezier(0.17, 0.67, 0.26, 0.94);
+   transform-origin: center;
+   box-shadow: 0 0 30px rgba(79, 70, 229, 0.2);
+}
+
+
+
+/* Wheel slice text styling */
+.wheel-slice span {
+   display: inline-block;
+   max-width: 80px;
+   text-overflow: ellipsis;
+   white-space: nowrap;
+   overflow: hidden;
+}
+
+/* Confetti animation */
+@keyframes confettiFall {
+   0% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 1;
+   }
+
+   100% {
+      transform: translateY(100vh) rotate(720deg);
+      opacity: 0;
+   }
+}
+
+/* For small mobile screens */
+@media (max-width: 640px) {
+   .wheel {
+      width: 280px;
+      height: 280px;
+   }
+
+   .wheel-slice span {
+      font-size: 10px;
+      max-width: 60px;
+   }
+}
+   </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
    <div x-data="topicsApp()" class="container mx-auto px-4 py-8">
@@ -189,7 +240,90 @@
                </div>
          </div>
       </main>
+
+<!-- Random Presenter Selector Section -->
+<div class="bg-white rounded-lg shadow-xl p-6 mb-10 animate__animated animate__fadeInUp">
+   <h2 class="text-2xl font-semibold text-indigo-700 mb-6 flex items-center">
+      <i class="fas fa-user-graduate mr-3"></i>
+      Presentation Selector
+   </h2>
+   
+   <div class="flex flex-col items-center">
+      <p class="text-gray-600 mb-4 text-center">Who's presenting today? Spin the wheel to randomly select a group!</p>
       
+      <!-- Presenter Wheel Container -->
+      <div x-show="reservedTopicsForWheel.length > 0" class="relative w-full max-w-xl mb-8">
+         <!-- Spinning Wheel -->
+         <div class="wheel-container relative mx-auto">
+            <div 
+               x-ref="presenterWheel" 
+               class="wheel relative w-64 h-64 md:w-72 md:h-72 rounded-full border-8 border-indigo-600 bg-white shadow-xl mx-auto transition-transform duration-3000 ease-out"
+            >
+               <!-- Topic slices will be rendered based on reserved topics -->
+               <template x-for="(topic, index) in reservedTopicsForWheel" :key="index">
+                  <div 
+                     class="wheel-slice absolute top-0 left-0 w-full h-full origin-bottom overflow-hidden"
+                     :style="`transform: rotate(${index * (360/reservedTopicsForWheel.length)}deg); 
+                            clip-path: polygon(50% 50%, 50% 0%, ${50 + 50 * Math.sin(Math.PI/reservedTopicsForWheel.length)}% ${50 - 50 * Math.cos(Math.PI/reservedTopicsForWheel.length)}%, 
+                            ${50 + 50 * Math.sin(Math.PI/reservedTopicsForWheel.length * 2)}% ${50 - 50 * Math.cos(Math.PI/reservedTopicsForWheel.length * 2)}%);
+                            background-color: ${getSliceColor(index)};`"
+                  >
+                     <div 
+                        class="absolute w-full text-center top-6 left-0 transform -rotate-90 text-sm font-medium text-white break-words px-2"
+                        :style="`transform: rotate(${-(index * (360/reservedTopicsForWheel.length)) + (180/reservedTopicsForWheel.length)}deg);`"
+                     >
+                        <span x-text="topic.name.length > 15 ? topic.name.substring(0, 15) + '...' : topic.name"></span>
+                     </div>
+                  </div>
+               </template>
+               
+               <!-- Center of wheel -->
+               <div class="absolute inset-0 flex items-center justify-center">
+                  <div class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white border-4 border-indigo-600 z-10 flex items-center justify-center">
+                     <i class="fas fa-graduation-cap text-indigo-600 text-xl"></i>
+                  </div>
+               </div>
+            </div>
+            
+            <!-- Selection pointer -->
+            <!-- <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-4 z-20">
+               <div class="w-8 h-8 bg-red-500 rotate-45 transform origin-center"></div>
+            </div> -->
+         </div>
+         
+         <!-- Selected Topic Display -->
+         <div x-show="selectedPresenter" class="mt-8 text-center animate__animated animate__bounceIn">
+            <h3 class="text-xl font-bold text-indigo-700 mb-2">Selected Presentation:</h3>
+            <div class="bg-indigo-50 rounded-lg p-4 border-2 border-indigo-200">
+               <p class="text-lg font-medium text-indigo-800" x-text="selectedPresenter?.name"></p>
+               <p class="text-gray-600">Presented by: <span class="font-semibold" x-text="selectedPresenter?.reservedBy"></span></p>
+            </div>
+         </div>
+         
+         <!-- Spin Button -->
+         <div class="mt-6 text-center">
+            <button 
+               @click="spinPresenterWheel()" 
+               class="px-6 py-3 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors duration-150 shadow-lg transform hover:scale-105 flex items-center mx-auto"
+               :disabled="isSpinning"
+               :class="{'opacity-50 cursor-not-allowed': isSpinning}"
+            >
+               <i class="fas fa-sync-alt mr-2" :class="{'animate-spin': isSpinning}"></i>
+               <span x-text="isSpinning ? 'Spinning...' : 'Spin the Wheel'"></span>
+            </button>
+         </div>
+      </div>
+      
+      <!-- No reserved topics message -->
+      <div x-show="reservedTopicsForWheel.length === 0" class="text-center py-8">
+         <div class="text-5xl text-gray-300 mb-4">
+            <i class="fas fa-exclamation-circle"></i>
+         </div>
+         <p class="text-lg text-gray-500">No reserved topics available for the wheel.</p>
+         <p class="text-gray-500">Students need to reserve topics first.</p>
+      </div>
+   </div>
+</div>
       <!-- Footer Section -->
       <footer class="mt-16 text-center animate__animated animate__fadeInUp">
          <div class="flex flex-col items-center justify-center">
